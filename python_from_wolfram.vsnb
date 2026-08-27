@@ -1,0 +1,109 @@
+{
+ "cells": [
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "# 4b. Run Python from Wolfram Language\n\nThis is the companion to `python_basics.ipynb`.\n\nThat Jupyter notebook showed **Wolfram running inside Python** (`wolframclient`).\nThis `.vsnb` shows the other direction: **Python running inside Wolfram** with `ExternalEvaluate`.\n\nEvaluate cells in order with the Wolfram kernel (Shift+Enter). Python must be installed; Wolfram usually finds it automatically."
+  },
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "## What evaluators does this machine have?\n\n`FindExternalEvaluators[\"Python\"]` lists Python installations Wolfram can see."
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "FindExternalEvaluators[\"Python\"]"
+  },
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "## One-shot evaluation\n\n`ExternalEvaluate[\"Python\", code]` starts Python, runs the string, and returns the result as a Wolfram expression."
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "ExternalEvaluate[\"Python\", \"1 + 1\"]"
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "ExternalEvaluate[\"Python\", \"2 ** 8\"]"
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "ExternalEvaluate[\"Python\", \"[n * n for n in range(1, 6)]\"]"
+  },
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "## Insert a Wolfram value into Python\n\n`<* expression *>` is a template slot. Wolfram evaluates the slot first, then pastes the result into the Python string."
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "x = 42;\nExternalEvaluate[\"Python\", \"1 + <* x *>\"]"
+  },
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "## Keep a session (so Python remembers variables)\n\n`StartExternalSession` is like opening a Python kernel and leaving it running. Later `ExternalEvaluate[session, ...]` calls reuse the same process.\n\nWhen you are done, `DeleteObject[session]` shuts it down."
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "session = StartExternalSession[\"Python\"];\nrepo = SelectFirst[\n  {\n    FileNameJoin[{$HomeDirectory, \"Developer\", \"Brett_training_repo\"}],\n    Directory[]\n  },\n  FileExistsQ[FileNameJoin[{#, \"player.py\"}]] &\n]"
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "ExternalEvaluate[session, \"name = 'Brett'\\ngames = 10\\npoints = 187\\nppg = points / games\\nppg\"]"
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "ExternalEvaluate[session, \"f'{name} averaged {ppg:.1f} points per game.'\"]"
+  },
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "## Load the same `Player` class from this folder\n\nPython's working directory in this session is not always the notebook folder, so we `chdir` into the training repo first, then import `player.py`."
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "ExternalEvaluate[session, \"import os, sys\\nos.chdir(r'\" <> repo <> \"')\\nsys.path.insert(0, '.')\\nfrom player import Player\\np = Player('Nikola Jokic', 'Nuggets', 2094, 79)\\n(p.name, p.team, round(p.points_per_game(), 2), p.summary())\"]"
+  },
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "## pandas from Wolfram\n\nIf this Python has pandas, you can build a table in Python and get a Wolfram list back.\n\nThe training repo's virtual environment is a reliable choice because it already has pandas installed."
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "py = FileNameJoin[{repo, \".venv\", \"bin\", \"python\"}];\nvenvSession = StartExternalSession[{\"Python\", \"Evaluator\" -> py}]"
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "csvPath = FileNameJoin[{repo, \"sample_nba_stats.csv\"}];\nExternalEvaluate[venvSession, \"import pandas as pd\\ndf = pd.read_csv(r'\" <> csvPath <> \"')\\ndf['ppg'] = df['points'] / df['games']\\nrows = df.sort_values('ppg', ascending=False)[['player', 'ppg']].head(3)\\n[[str(p), float(ppg)] for p, ppg in rows.itertuples(index=False)]\"]"
+  },
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "## Clean up\n\nAlways close external sessions when you are finished so the Python processes do not linger."
+  },
+  {
+   "kind": 2,
+   "languageId": "wolfram",
+   "value": "DeleteObject[session]\nDeleteObject[venvSession]\n\"sessions closed\""
+  },
+  {
+   "kind": 1,
+   "languageId": "markdown",
+   "value": "## Recap\n\n| You are in | You want to run | Use |\n| --- | --- | --- |\n| Python notebook (`python_basics.ipynb`) | Wolfram Language | `wolframclient` / `WolframLanguageSession` |\n| Wolfram notebook (this file) | Python | `ExternalEvaluate[\"Python\", code]` |\n\nBoth directions convert types for you: Python lists become Wolfram lists, numbers stay numbers, and strings stay strings."
+  }
+ ]
+}
